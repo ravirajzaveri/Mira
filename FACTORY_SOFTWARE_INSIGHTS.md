@@ -2,21 +2,21 @@
 
 ## Executive Summary
 
-Based on analysis of 34 screenshots from the existing factory software, this document provides comprehensive insights into the current jewelry manufacturing management system. The system combines the **Esatto Factory Management System** (Windows desktop application) with **Google Sheets** for order management, creating a hybrid approach to jewelry production workflow.
+Based on analysis of 34 screenshots from the existing factory software, this document provides comprehensive insights into the current jewelry manufacturing management system. The **Esatto Factory Management System** is a Windows desktop application that manages the complete jewelry production workflow. We also analyzed Google Sheets screenshots showing order management structure for our new web-based system design.
 
 ## System Architecture Overview
 
 ### Primary Components
 1. **Esatto Factory Management System** - Core manufacturing ERP
-2. **Esatto-JRS (Jewelry Reporting Services)** - Inventory & reporting module
-3. **Google Sheets "NEW ORDER SHEET"** - Cloud-based order management
-4. **Crystal Reports** - Professional report generation
+2. **Esatto-JRS (Jewelry Reporting Services)** - Inventory & reporting module  
+3. **Crystal Reports** - Professional report generation
+4. **Order Management Structure** - Analyzed from Google Sheets for new system design
 
 ### Technology Stack
 - **Platform**: Windows Desktop Application (.NET Framework)
 - **Database**: SQL Server backend
 - **Reporting**: SAP Crystal Reports integration
-- **Cloud Integration**: Google Sheets API
+- **Order Analysis**: Google Sheets structure analyzed for new system design
 - **UI Framework**: Traditional Windows Forms with custom controls
 
 ## User Interface Analysis
@@ -59,7 +59,7 @@ Main Menu (Left Sidebar)
 
 ### 1. Manufacturing Workflow
 ```
-Order Receipt (Google Sheets) → Job Card Creation → Material Issue → 
+Order Receipt → Job Card Creation → Material Issue → 
 Production Process → Receipt/Completion → Quality Check → Final Output
 ```
 
@@ -146,9 +146,9 @@ Material Flow:
 - Quality Control Points
 ```
 
-## Google Sheets Order Management System
+## Order Management Structure Analysis
 
-### NEW ORDER SHEET Structure
+### Order Sheet Structure (Analyzed for New System Design)
 
 #### Client Management Columns
 - **CLIENT**: Customer categorization
@@ -253,17 +253,16 @@ Workflow Stages:
 
 ## Technology Integration Points
 
-### Google Sheets Integration
-**Benefits**:
+### Order Management Benefits (For New System)**:
 - Real-time order status visibility
-- Cloud-based accessibility
-- Client portal capabilities
+- Web-based accessibility
+- Client portal capabilities  
 - Progress tracking with visual indicators
 - Image integration for product reference
 
-**Data Synchronization**:
+**Data Flow Design**:
 - Order information flows to job card creation
-- Progress updates reflect in both systems
+- Progress updates reflect in real-time
 - Status changes trigger notifications
 
 ### Database Architecture
