@@ -21,8 +21,11 @@ model Karigar {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  issues   Issue[]
-  receipts Receipt[]
+  issues                Issue[]
+  receipts              Receipt[]
+  currentOrders         Order[]
+  orderStatusHistory    OrderStatusHistory[]
+  assignedJobCards      JobCard[] @relation("JobCardKarigar")
 
   @@map("karigars")
 }
@@ -33,7 +36,10 @@ model Process {
   description String?
   active      Boolean @default(true)
 
-  issues Issue[]
+  issues                Issue[]
+  currentOrders         Order[]
+  orderStatusHistory    OrderStatusHistory[]
+  assignedJobCards      JobCard[] @relation("JobCardProcess")
 
   @@map("processes")
 }
@@ -110,4 +116,148 @@ model StockRegister {
   createdAt       DateTime @default(now())
 
   @@map("stock_register")
+}
+
+// Order Management System
+model Order {
+  id                    String    @id @default(cuid())
+  orderNo               String    @unique
+  bagNo                 String?
+  clientName            String
+  clientCategory        String    @default("RETAIL") // SAMPLE, ONLINE, RETAIL, WHOLESALE
+  
+  // Product Details
+  designNo              String?
+  description           String?
+  quantity              Int       @default(1)
+  
+  // Stone Specifications
+  stoneType             String?
+  stoneSize             String?
+  stoneQuality          String?
+  
+  // Timeline & Delivery
+  orderDate             DateTime  @default(now())
+  deliveryDate          DateTime?
+  urgencyLevel          String    @default("NORMAL") // NORMAL, URGENT, RUSH
+  
+  // Special Requirements
+  specialInstructions   String?
+  
+  // Status Tracking
+  currentStatus         String    @default("RECEIVED") // OrderStatus enum values
+  currentLocation       String    @default("HEAD_OFFICE") // HEAD_OFFICE, FACTORY, KARIGAR
+  currentKarigarId      String?
+  currentProcessId      String?
+  
+  // Progress Tracking
+  progressPercentage    Float     @default(0)
+  estimatedCompletion   DateTime?
+  
+  // Images & Documents
+  imageUrls             String[]  @default([])
+  documentUrls          String[]  @default([])
+  
+  // Timestamps
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  
+  // Relations
+  currentKarigar        Karigar?  @relation(fields: [currentKarigarId], references: [id])
+  currentProcess        Process?  @relation(fields: [currentProcessId], references: [id])
+  statusHistory         OrderStatusHistory[]
+  jobCards              JobCard[]
+  
+  @@map("orders")
+}
+
+// Order Status History Tracking
+model OrderStatusHistory {
+  id              String   @id @default(cuid())
+  orderId         String
+  previousStatus  String?
+  newStatus       String
+  location        String
+  karigarId       String?
+  processId       String?
+  statusDate      DateTime @default(now())
+  comments        String?
+  changedBy       String?
+  
+  // Relations
+  order           Order    @relation(fields: [orderId], references: [id])
+  karigar         Karigar? @relation(fields: [karigarId], references: [id])
+  process         Process? @relation(fields: [processId], references: [id])
+  
+  @@map("order_status_history")
+}
+
+// Enhanced Job Card System
+model JobCard {
+  id                      String    @id @default(cuid())
+  jobCardNo               String    @unique
+  orderId                 String?
+  
+  // Assignment Details
+  assignedKarigarId       String
+  assignedProcessId       String
+  assignedDate            DateTime  @default(now())
+  expectedCompletionDate  DateTime?
+  priority                String    @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
+  
+  // Work Details
+  workDescription         String?
+  specialInstructions     String?
+  qualityRequirements     String?
+  
+  // Time Tracking
+  estimatedHours          Float?
+  actualHours             Float?
+  startTime               DateTime?
+  endTime                 DateTime?
+  
+  // Progress Tracking
+  completionPercentage    Float     @default(0)
+  
+  // Material & Weight
+  pieces                  Int       @default(0)
+  grossWeight             Float     @default(0)
+  stoneWeight             Float     @default(0)
+  netWeight               Float     @default(0)
+  finalWeight             Float?
+  
+  // Status & Comments
+  status                  String    @default("ASSIGNED") // ASSIGNED, MATERIAL_ISSUED, WORK_STARTED, IN_PROGRESS, QUALITY_CHECK, REWORK_REQUIRED, COMPLETED, RECEIVED, ON_HOLD
+  karigarComments         String?
+  supervisorComments      String?
+  
+  // Timestamps
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  
+  // Relations
+  order                   Order?    @relation(fields: [orderId], references: [id])
+  assignedKarigar         Karigar   @relation("JobCardKarigar", fields: [assignedKarigarId], references: [id])
+  assignedProcess         Process   @relation("JobCardProcess", fields: [assignedProcessId], references: [id])
+  qualityCheckpoints      QualityCheckpoint[]
+  
+  @@map("job_cards")
+}
+
+// Quality Control System
+model QualityCheckpoint {
+  id                  String   @id @default(cuid())
+  jobCardId           String
+  checkpointName      String
+  requiredStandard    String?
+  actualMeasurement   String?
+  result              String   // PASS, FAIL, REWORK
+  checkedBy           String?
+  checkedAt           DateTime @default(now())
+  comments            String?
+  
+  // Relations
+  jobCard             JobCard  @relation(fields: [jobCardId], references: [id])
+  
+  @@map("quality_checkpoints")
 }

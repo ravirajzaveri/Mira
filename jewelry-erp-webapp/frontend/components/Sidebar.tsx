@@ -11,12 +11,14 @@ import {
   CogIcon,
   ChartBarIcon,
   Bars3Icon,
-  XMarkIcon
+  XMarkIcon,
+  DocumentTextIcon
 } from '@heroicons/react/24/outline'
 import { clsx } from 'clsx'
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: HomeIcon },
+  { name: 'Orders', href: '/orders', icon: DocumentTextIcon },
   { name: 'Issue', href: '/issue', icon: ArrowUpIcon },
   { name: 'Receive', href: '/receive', icon: ArrowDownIcon },
   { name: 'Karigars', href: '/karigars', icon: UsersIcon },
