@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import Image from 'next/image';
 import { Order, OrderStatusHistory } from '@/types/orders';
 import { orderApi } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
@@ -35,7 +36,7 @@ const OrderDetailPage: React.FC = () => {
   const [statusHistory, setStatusHistory] = useState<OrderStatusHistory[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchOrderDetails = async () => {
+  const fetchOrderDetails = useCallback(async () => {
     try {
       setLoading(true);
       const [orderData, historyData] = await Promise.all([
@@ -51,13 +52,13 @@ const OrderDetailPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [orderId]);
 
   useEffect(() => {
     if (orderId) {
       fetchOrderDetails();
     }
-  }, [orderId]);
+  }, [orderId, fetchOrderDetails]);
 
   if (loading) {
     return (
@@ -81,7 +82,7 @@ const OrderDetailPage: React.FC = () => {
       <div className="p-6">
         <div className="text-center py-12">
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Order not found</h2>
-          <p className="text-gray-600 mb-4">The order you're looking for doesn't exist.</p>
+          <p className="text-gray-600 mb-4">The order you&apos;re looking for doesn&apos;t exist.</p>
           <Button onClick={() => router.push('/orders')}>
             Back to Orders
           </Button>
@@ -278,11 +279,12 @@ const OrderDetailPage: React.FC = () => {
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {order.imageUrls.map((url, index) => (
-                    <div key={index} className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                      <img
+                    <div key={index} className="aspect-square bg-gray-100 rounded-lg overflow-hidden relative">
+                      <Image
                         src={url}
                         alt={`Product ${index + 1}`}
-                        className="w-full h-full object-cover"
+                        fill
+                        className="object-cover"
                         onError={(e) => {
                           (e.target as HTMLImageElement).style.display = 'none';
                         }}

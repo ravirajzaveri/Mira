@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { Order, getStatusColor, getLocationColor, getUrgencyColor, formatStatus, formatLocation } from '@/types/orders';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -198,11 +199,12 @@ const OrderCard: React.FC<OrderCardProps> = ({
             <h4 className="text-sm font-medium text-gray-700 mb-2">Images ({order.imageUrls.length})</h4>
             <div className="flex gap-2">
               {order.imageUrls.slice(0, 3).map((url, index) => (
-                <div key={index} className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                  <img
+                <div key={index} className="w-12 h-12 bg-gray-100 rounded-lg relative overflow-hidden">
+                  <Image
                     src={url}
                     alt={`Product ${index + 1}`}
-                    className="w-full h-full object-cover rounded-lg"
+                    fill
+                    className="object-cover"
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = 'none';
                     }}
