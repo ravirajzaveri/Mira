@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends, Query
 from typing import List, Optional
 from datetime import datetime, timedelta
-from ..database import get_db
-from ..schemas.issue import IssueCreate, IssueUpdate, IssueResponse
+from database import get_db
+from schemas.issue import IssueCreate, IssueUpdate, IssueResponse
 from prisma import Prisma
 
 router = APIRouter()
