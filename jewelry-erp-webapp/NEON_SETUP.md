@@ -34,21 +34,38 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 
 ### Vercel Production
 
-1. **Set Environment Variables** in Vercel Dashboard:
+**Method 1: Vercel Dashboard** (Recommended)
+1. Go to your Vercel project dashboard
+2. Navigate to **Settings** → **Environment Variables**
+3. Add the following variables for **Production**, **Preview**, and **Development**:
    - `DATABASE_URL`: Your Neon connection string
    - `DIRECT_URL`: Same as DATABASE_URL for Neon
    - `JWT_SECRET`: Secure random string
 
-2. **Vercel CLI** (Alternative):
+**Method 2: Vercel CLI**
 ```bash
-vercel env add DATABASE_URL
+# Add environment variables for all environments
+vercel env add DATABASE_URL production
 # Paste your Neon connection string when prompted
 
-vercel env add DIRECT_URL  
+vercel env add DIRECT_URL production
 # Paste the same Neon connection string
 
-vercel env add JWT_SECRET
+vercel env add JWT_SECRET production
 # Enter a secure random string
+
+# Repeat for preview and development environments
+vercel env add DATABASE_URL preview
+vercel env add DATABASE_URL development
+# ... etc for DIRECT_URL and JWT_SECRET
+```
+
+**Method 3: Using .env files with Vercel**
+```bash
+# Pull environment variables to local .env files
+vercel env pull .env
+
+# This creates .env.local with your Vercel environment variables
 ```
 
 ## Step 3: Database Setup

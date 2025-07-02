@@ -19,9 +19,5 @@
       "src": "/(.*)",
       "dest": "/frontend/$1"
     }
-  ],
-  "env": {
-    "DATABASE_URL": "@neon_database_url",
-    "DIRECT_URL": "@neon_database_url"
-  }
+  ]
 }

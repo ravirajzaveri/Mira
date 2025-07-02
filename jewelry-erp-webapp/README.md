@@ -196,17 +196,14 @@ Set up a Neon PostgreSQL database (recommended):
 3. Copy the connection string
 
 ### 2. Environment Variables
-Configure in Vercel dashboard:
+Configure in Vercel dashboard → Settings → Environment Variables:
 - `DATABASE_URL`: Your Neon connection string
-- `DIRECT_URL`: Same as DATABASE_URL for Neon
+- `DIRECT_URL`: Same as DATABASE_URL for Neon  
 - `JWT_SECRET`: Secure random string
 
-```bash
-# Using Vercel CLI
-vercel env add DATABASE_URL
-vercel env add DIRECT_URL
-vercel env add JWT_SECRET
-```
+**Important**: Set these for Production, Preview, and Development environments.
+
+> **Quick Deploy**: See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for step-by-step deployment instructions.
 
 ### 3. Deploy
 ```bash
