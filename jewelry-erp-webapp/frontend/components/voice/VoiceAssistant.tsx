@@ -53,8 +53,41 @@ const VoiceAssistant: React.FC = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const recognitionRef = useRef<any>(null);
 
+  // Utility functions - declared first to avoid circular dependencies
+  const extractOrderNumber = useCallback((text: string): string | null => {
+    const match = text.match(/ORD-\d{8}-\d{3}/i);
+    return match ? match[0].toUpperCase() : null;
+  }, []);
+
+  const extractStatus = useCallback((text: string): string => {
+    const statusKeywords: Record<string, string> = {
+      'completed': 'COMPLETED',
+      'finished': 'COMPLETED',
+      'done': 'COMPLETED',
+      'casting': 'CASTING_COMPLETED',
+      'polishing': 'POLISHING_COMPLETED',
+      'quality': 'QUALITY_CHECK_PENDING',
+      'approved': 'QUALITY_APPROVED',
+      'delivered': 'DELIVERED'
+    };
+    
+    const lowercaseText = text.toLowerCase();
+    for (const [keyword, status] of Object.entries(statusKeywords)) {
+      if (lowercaseText.includes(keyword)) {
+        return status;
+      }
+    }
+    return 'IN_PROGRESS';
+  }, []);
+
+  const extractIssueTitle = useCallback((text: string): string => {
+    // Extract meaningful title from voice command
+    const words = text.split(' ');
+    const titleWords = words.slice(0, 8); // Take first 8 words
+    return titleWords.join(' ').replace(/[^\w\s]/gi, '');
+  }, []);
+
   // Process voice command
-  // Forward declarations for breaking circular dependencies
   const analyzeVoiceCommand = useCallback(async (text: string): Promise<VoiceCommand> => {
     // This would integrate with OpenAI or similar for intent recognition
     // For now, using simple keyword matching
@@ -109,6 +142,180 @@ const VoiceAssistant: React.FC = () => {
     };
   }, [extractOrderNumber, extractStatus]);
 
+  // Create GitHub issue
+  const createGitHubIssue = async (command: VoiceCommand): Promise<VoiceResponse> => {
+    try {
+      const issue: GitHubIssue = {
+        title: `Voice Report: ${extractIssueTitle(command.text)}`,
+        body: `**Voice Command:** ${command.text}\n\n**Reported via Voice Interface**\n\nTimestamp: ${new Date().toISOString()}\n\n**Description:**\n${command.text}\n\n**Priority:** ${command.entities.priority || 'medium'}\n\n**Labels:** voice-report, ${command.entities.issueType || 'general'}`,
+        labels: ['voice-report', command.entities.issueType || 'general', command.entities.priority || 'medium'],
+        priority: command.entities.priority || 'medium'
+      };
+
+      // Create issue via GitHub API
+      const response = await fetch('/api/github/issues', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(issue)
+      });
+
+      if (response.ok) {
+        const createdIssue = await response.json();
+        return {
+          text: `I&apos;ve created GitHub issue #${createdIssue.number}: "${issue.title}". The development team will review it shortly.`,
+          action: 'issue_created',
+          data: createdIssue
+        };
+      } else {
+        throw new Error('Failed to create GitHub issue');
+      }
+    } catch (error) {
+      console.error('GitHub issue creation failed:', error);
+      return {
+        text: 'I encountered an error creating the GitHub issue. Please try again or create it manually.',
+      };
+    }
+  };
+
+  // Handle order queries
+  const handleOrderQuery = async (command: VoiceCommand): Promise<VoiceResponse> => {
+    try {
+      const filter = command.entities.filter || 'all';
+      
+      // This would call the actual orders API
+      const ordersResponse = await fetch(`/api/orders?voice_query=${filter}`);
+      const ordersData = await ordersResponse.json();
+      
+      if (ordersData.orders && ordersData.orders.length > 0) {
+        const orderCount = ordersData.orders.length;
+        const summary = filter === 'delayed' 
+          ? `You have ${orderCount} delayed orders that need attention.`
+          : filter === 'urgent'
+          ? `You have ${orderCount} urgent orders to prioritize.`
+          : `You have ${orderCount} total orders in the system.`;
+        
+        return {
+          text: summary,
+          action: 'orders_fetched',
+          data: ordersData.orders
+        };
+      } else {
+        return {
+          text: filter === 'all' ? 'No orders found in the system.' : `No ${filter} orders found.`,
+        };
+      }
+    } catch (error) {
+      console.error('Order query failed:', error);
+      return {
+        text: 'I encountered an error fetching the orders. Please try again.',
+      };
+    }
+  };
+
+  // Handle status updates
+  const handleStatusUpdate = async (command: VoiceCommand): Promise<VoiceResponse> => {
+    const orderNo = command.entities.orderNo;
+    const status = command.entities.status;
+    
+    if (!orderNo) {
+      return {
+        text: 'I need an order number to update the status. Please say something like "update status for order ORD-20240315-001".',
+      };
+    }
+
+    try {
+      const response = await fetch(`/api/orders/${orderNo}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+
+      if (response.ok) {
+        return {
+          text: `I&apos;ve updated the status of order ${orderNo} to ${status.toLowerCase().replace('_', ' ')}.`,
+          action: 'status_updated',
+          data: { orderNo, status }
+        };
+      } else {
+        throw new Error('Failed to update order status');
+      }
+    } catch (error) {
+      console.error('Status update failed:', error);
+      return {
+        text: `I couldn&apos;t update the status for order ${orderNo}. Please check the order number and try again.`,
+      };
+    }
+  };
+
+  // Handle general queries
+  const handleGeneralQuery = async (command: VoiceCommand): Promise<VoiceResponse> => {
+    return {
+      text: 'I can help you with creating GitHub issues, showing orders, and updating order status. What would you like to do?',
+    };
+  };
+
+  // Execute voice command
+  const executeVoiceCommand = async (command: VoiceCommand): Promise<VoiceResponse> => {
+    switch (command.intent) {
+      case 'create_issue':
+        return await createGitHubIssue(command);
+      
+      case 'show_orders':
+        return await handleOrderQuery(command);
+      
+      case 'update_status':
+        return await handleStatusUpdate(command);
+      
+      case 'general_query':
+        return await handleGeneralQuery(command);
+      
+      default:
+        return {
+          text: 'I didn&apos;t understand that command. Try saying "create issue", "show orders", or "update status".',
+        };
+    }
+  };
+
+  // Play audio response
+  const playAudioResponse = async (audioUrl: string) => {
+    try {
+      setIsPlaying(true);
+      
+      if (audioRef.current) {
+        audioRef.current.src = audioUrl;
+        await audioRef.current.play();
+      }
+    } catch (error) {
+      console.error('Audio playback failed:', error);
+    } finally {
+      setIsPlaying(false);
+    }
+  };
+
+  // Generate and play TTS
+  const generateAndPlayTTS = async (text: string) => {
+    try {
+      // This would integrate with ElevenLabs TTS API
+      const response = await fetch('/api/elevenlabs/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          text,
+          voice_id: 'default', // Replace with actual ElevenLabs voice ID
+          model_id: 'eleven_monolingual_v1'
+        })
+      });
+      
+      if (response.ok) {
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        await playAudioResponse(audioUrl);
+      }
+    } catch (error) {
+      console.error('TTS generation failed:', error);
+    }
+  };
+
   const processVoiceCommand = useCallback(async (text: string) => {
     if (!text.trim()) return;
 
@@ -155,7 +362,7 @@ const VoiceAssistant: React.FC = () => {
       setIsProcessing(false);
       setTranscript('');
     }
-  }, [analyzeVoiceCommand, executeVoiceCommand, playAudioResponse, generateAndPlayTTS]);
+  }, [analyzeVoiceCommand]);
 
   // Initialize speech recognition
   useEffect(() => {
@@ -215,217 +422,6 @@ const VoiceAssistant: React.FC = () => {
       startListening();
     }
   }, [isListening, startListening, stopListening]);
-
-  // Utility functions
-  const extractOrderNumber = useCallback((text: string): string | null => {
-    const match = text.match(/ORD-\d{8}-\d{3}/i);
-    return match ? match[0].toUpperCase() : null;
-  }, []);
-
-  const extractStatus = useCallback((text: string): string => {
-    const statusKeywords: Record<string, string> = {
-      'completed': 'COMPLETED',
-      'finished': 'COMPLETED',
-      'done': 'COMPLETED',
-      'casting': 'CASTING_COMPLETED',
-      'polishing': 'POLISHING_COMPLETED',
-      'quality': 'QUALITY_CHECK_PENDING',
-      'approved': 'QUALITY_APPROVED',
-      'delivered': 'DELIVERED'
-    };
-    
-    const lowercaseText = text.toLowerCase();
-    for (const [keyword, status] of Object.entries(statusKeywords)) {
-      if (lowercaseText.includes(keyword)) {
-        return status;
-      }
-    }
-    return 'IN_PROGRESS';
-  }, []);
-
-  const extractIssueTitle = useCallback((text: string): string => {
-    // Extract meaningful title from voice command
-    const words = text.split(' ');
-    const titleWords = words.slice(0, 8); // Take first 8 words
-    return titleWords.join(' ').replace(/[^\w\s]/gi, '');
-  }, []);
-
-  // Play audio response
-  const playAudioResponse = useCallback(async (audioUrl: string) => {
-    try {
-      setIsPlaying(true);
-      
-      if (audioRef.current) {
-        audioRef.current.src = audioUrl;
-        await audioRef.current.play();
-      }
-    } catch (error) {
-      console.error('Audio playback failed:', error);
-    } finally {
-      setIsPlaying(false);
-    }
-  }, []);
-
-  // Generate and play TTS
-  const generateAndPlayTTS = useCallback(async (text: string) => {
-    try {
-      // This would integrate with ElevenLabs TTS API
-      const response = await fetch('/api/elevenlabs/tts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          text,
-          voice_id: 'default', // Replace with actual ElevenLabs voice ID
-          model_id: 'eleven_monolingual_v1'
-        })
-      });
-      
-      if (response.ok) {
-        const audioBlob = await response.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        await playAudioResponse(audioUrl);
-      }
-    } catch (error) {
-      console.error('TTS generation failed:', error);
-    }
-  }, [playAudioResponse]);
-
-
-  // Execute voice command
-  const executeVoiceCommand = useCallback(async (command: VoiceCommand): Promise<VoiceResponse> => {
-    switch (command.intent) {
-      case 'create_issue':
-        return await createGitHubIssue(command);
-      
-      case 'show_orders':
-        return await handleOrderQuery(command);
-      
-      case 'update_status':
-        return await handleStatusUpdate(command);
-      
-      case 'general_query':
-        return await handleGeneralQuery(command);
-      
-      default:
-        return {
-          text: 'I didn&apos;t understand that command. Try saying "create issue", "show orders", or "update status".',
-        };
-    }
-  }, [createGitHubIssue, handleOrderQuery, handleStatusUpdate, handleGeneralQuery]);
-
-  // Create GitHub issue
-  const createGitHubIssue = useCallback(async (command: VoiceCommand): Promise<VoiceResponse> => {
-    try {
-      const issue: GitHubIssue = {
-        title: `Voice Report: ${extractIssueTitle(command.text)}`,
-        body: `**Voice Command:** ${command.text}\n\n**Reported via Voice Interface**\n\nTimestamp: ${new Date().toISOString()}\n\n**Description:**\n${command.text}\n\n**Priority:** ${command.entities.priority || 'medium'}\n\n**Labels:** voice-report, ${command.entities.issueType || 'general'}`,
-        labels: ['voice-report', command.entities.issueType || 'general', command.entities.priority || 'medium'],
-        priority: command.entities.priority || 'medium'
-      };
-
-      // Create issue via GitHub API
-      const response = await fetch('/api/github/issues', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(issue)
-      });
-
-      if (response.ok) {
-        const createdIssue = await response.json();
-        return {
-          text: `I&apos;ve created GitHub issue #${createdIssue.number}: "${issue.title}". The development team will review it shortly.`,
-          action: 'issue_created',
-          data: createdIssue
-        };
-      } else {
-        throw new Error('Failed to create GitHub issue');
-      }
-    } catch (error) {
-      console.error('GitHub issue creation failed:', error);
-      return {
-        text: 'I encountered an error creating the GitHub issue. Please try again or create it manually.',
-      };
-    }
-  }, [extractIssueTitle]);
-
-  // Handle order queries
-  const handleOrderQuery = useCallback(async (command: VoiceCommand): Promise<VoiceResponse> => {
-    try {
-      const filter = command.entities.filter || 'all';
-      
-      // This would call the actual orders API
-      const ordersResponse = await fetch(`/api/orders?voice_query=${filter}`);
-      const ordersData = await ordersResponse.json();
-      
-      if (ordersData.orders && ordersData.orders.length > 0) {
-        const orderCount = ordersData.orders.length;
-        const summary = filter === 'delayed' 
-          ? `You have ${orderCount} delayed orders that need attention.`
-          : filter === 'urgent'
-          ? `You have ${orderCount} urgent orders in progress.`
-          : `You have ${orderCount} total orders in the system.`;
-        
-        return {
-          text: summary,
-          action: 'orders_displayed',
-          data: ordersData
-        };
-      } else {
-        return {
-          text: `No ${filter === 'all' ? '' : filter} orders found.`,
-        };
-      }
-    } catch (error) {
-      return {
-        text: 'I encountered an error fetching the orders. Please try again.',
-      };
-    }
-  }, []);
-
-  // Handle status updates
-  const handleStatusUpdate = useCallback(async (command: VoiceCommand): Promise<VoiceResponse> => {
-    const orderNo = command.entities.orderNo;
-    const status = command.entities.status;
-    
-    if (!orderNo) {
-      return {
-        text: 'I need an order number to update the status. Please say something like "update order ORD-20241201-001 status to completed".',
-      };
-    }
-    
-    try {
-      // This would call the actual status update API
-      const response = await fetch(`/api/orders/${orderNo}/status`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          newStatus: status,
-          comments: `Status updated via voice command: ${command.text}`
-        })
-      });
-      
-      if (response.ok) {
-        return {
-          text: `I&apos;ve updated order ${orderNo} status to ${status}.`,
-          action: 'status_updated',
-          data: { orderNo, status }
-        };
-      } else {
-        throw new Error('Status update failed');
-      }
-    } catch (error) {
-      return {
-        text: `I couldn&apos;t update the status for order ${orderNo}. Please check the order number and try again.`,
-      };
-    }
-  }, []);
-
-  // Handle general queries
-  const handleGeneralQuery = useCallback(async (command: VoiceCommand): Promise<VoiceResponse> => {
-    return {
-      text: 'I can help you with creating GitHub issues, showing orders, and updating order status. What would you like to do?',
-    };
-  }, []);
 
   return (
     <>
