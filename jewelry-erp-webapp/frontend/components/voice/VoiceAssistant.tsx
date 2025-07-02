@@ -51,118 +51,11 @@ const VoiceAssistant: React.FC = () => {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
-
-  // Initialize speech recognition
-  useEffect(() => {
-    if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window) {
-      const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = true;
-      recognitionRef.current.lang = 'en-US';
-
-      recognitionRef.current.onresult = (event) => {
-        const transcript = Array.from(event.results)
-          .map(result => result[0].transcript)
-          .join('');
-        setTranscript(transcript);
-      };
-
-      recognitionRef.current.onend = () => {
-        setIsListening(false);
-        if (transcript.trim()) {
-          processVoiceCommand(transcript);
-        }
-      };
-
-      recognitionRef.current.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
-        setIsListening(false);
-        toast.error('Speech recognition failed. Please try again.');
-      };
-    }
-  }, [transcript]);
-
-  // Start/Stop listening
-  const toggleListening = useCallback(() => {
-    if (isListening) {
-      stopListening();
-    } else {
-      startListening();
-    }
-  }, [isListening]);
-
-  const startListening = useCallback(() => {
-    if (!recognitionRef.current) {
-      toast.error('Speech recognition not supported in this browser');
-      return;
-    }
-
-    setIsListening(true);
-    setTranscript('');
-    recognitionRef.current.start();
-    toast.success('Listening... Speak your command');
-  }, []);
-
-  const stopListening = useCallback(() => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-    }
-    setIsListening(false);
-  }, []);
+  const recognitionRef = useRef<any>(null);
 
   // Process voice command
-  const processVoiceCommand = useCallback(async (text: string) => {
-    if (!text.trim()) return;
-
-    setIsProcessing(true);
-    
-    // Add user message to history
-    const userMessage = {
-      type: 'user' as const,
-      text,
-      timestamp: new Date()
-    };
-    setConversationHistory(prev => [...prev, userMessage]);
-
-    try {
-      // Analyze command intent
-      const command = await analyzeVoiceCommand(text);
-      
-      // Execute command
-      const response = await executeVoiceCommand(command);
-      
-      // Add assistant response to history
-      const assistantMessage = {
-        type: 'assistant' as const,
-        text: response.text,
-        timestamp: new Date()
-      };
-      setConversationHistory(prev => [...prev, assistantMessage]);
-      setLastResponse(response.text);
-
-      // Play audio response if available
-      if (response.audioUrl) {
-        await playAudioResponse(response.audioUrl);
-      } else {
-        // Generate TTS response
-        await generateAndPlayTTS(response.text);
-      }
-
-    } catch (error) {
-      console.error('Voice command processing failed:', error);
-      const errorMessage = 'Sorry, I couldn&apos;t process that command. Please try again.';
-      toast.error(errorMessage);
-      await generateAndPlayTTS(errorMessage);
-    } finally {
-      setIsProcessing(false);
-      setTranscript('');
-    }
-  }, []);
-
-  // Analyze voice command using AI
-  const analyzeVoiceCommand = async (text: string): Promise<VoiceCommand> => {
+  // Forward declarations for breaking circular dependencies
+  const analyzeVoiceCommand = useCallback(async (text: string): Promise<VoiceCommand> => {
     // This would integrate with OpenAI or similar for intent recognition
     // For now, using simple keyword matching
     
@@ -214,10 +107,192 @@ const VoiceAssistant: React.FC = () => {
       confidence: 0.5,
       entities: {}
     };
-  };
+  }, [extractOrderNumber, extractStatus]);
+
+  const processVoiceCommand = useCallback(async (text: string) => {
+    if (!text.trim()) return;
+
+    setIsProcessing(true);
+    
+    // Add user message to history
+    const userMessage = {
+      type: 'user' as const,
+      text,
+      timestamp: new Date()
+    };
+    setConversationHistory(prev => [...prev, userMessage]);
+
+    try {
+      // Analyze command intent
+      const command = await analyzeVoiceCommand(text);
+      
+      // Execute command
+      const response = await executeVoiceCommand(command);
+      
+      // Add assistant response to history
+      const assistantMessage = {
+        type: 'assistant' as const,
+        text: response.text,
+        timestamp: new Date()
+      };
+      setConversationHistory(prev => [...prev, assistantMessage]);
+      setLastResponse(response.text);
+
+      // Play audio response if available
+      if (response.audioUrl) {
+        await playAudioResponse(response.audioUrl);
+      } else {
+        // Generate TTS response
+        await generateAndPlayTTS(response.text);
+      }
+
+    } catch (error) {
+      console.error('Voice command processing failed:', error);
+      const errorMessage = 'Sorry, I couldn&apos;t process that command. Please try again.';
+      toast.error(errorMessage);
+      await generateAndPlayTTS(errorMessage);
+    } finally {
+      setIsProcessing(false);
+      setTranscript('');
+    }
+  }, [analyzeVoiceCommand, executeVoiceCommand, playAudioResponse, generateAndPlayTTS]);
+
+  // Initialize speech recognition
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window) {
+      const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = true;
+      recognitionRef.current.lang = 'en-US';
+
+      recognitionRef.current.onresult = (event: any) => {
+        const transcript = Array.from(event.results)
+          .map((result: any) => result[0].transcript)
+          .join('');
+        setTranscript(transcript);
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+        if (transcript.trim()) {
+          processVoiceCommand(transcript);
+        }
+      };
+
+      recognitionRef.current.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        setIsListening(false);
+        toast.error('Speech recognition failed. Please try again.');
+      };
+    }
+  }, [transcript, processVoiceCommand]);
+
+  // Start/Stop listening functions
+  const startListening = useCallback(() => {
+    if (!recognitionRef.current) {
+      toast.error('Speech recognition not supported in this browser');
+      return;
+    }
+
+    setIsListening(true);
+    setTranscript('');
+    recognitionRef.current.start();
+    toast.success('Listening... Speak your command');
+  }, []);
+
+  const stopListening = useCallback(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+    setIsListening(false);
+  }, []);
+
+  const toggleListening = useCallback(() => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  }, [isListening, startListening, stopListening]);
+
+  // Utility functions
+  const extractOrderNumber = useCallback((text: string): string | null => {
+    const match = text.match(/ORD-\d{8}-\d{3}/i);
+    return match ? match[0].toUpperCase() : null;
+  }, []);
+
+  const extractStatus = useCallback((text: string): string => {
+    const statusKeywords: Record<string, string> = {
+      'completed': 'COMPLETED',
+      'finished': 'COMPLETED',
+      'done': 'COMPLETED',
+      'casting': 'CASTING_COMPLETED',
+      'polishing': 'POLISHING_COMPLETED',
+      'quality': 'QUALITY_CHECK_PENDING',
+      'approved': 'QUALITY_APPROVED',
+      'delivered': 'DELIVERED'
+    };
+    
+    const lowercaseText = text.toLowerCase();
+    for (const [keyword, status] of Object.entries(statusKeywords)) {
+      if (lowercaseText.includes(keyword)) {
+        return status;
+      }
+    }
+    return 'IN_PROGRESS';
+  }, []);
+
+  const extractIssueTitle = useCallback((text: string): string => {
+    // Extract meaningful title from voice command
+    const words = text.split(' ');
+    const titleWords = words.slice(0, 8); // Take first 8 words
+    return titleWords.join(' ').replace(/[^\w\s]/gi, '');
+  }, []);
+
+  // Play audio response
+  const playAudioResponse = useCallback(async (audioUrl: string) => {
+    try {
+      setIsPlaying(true);
+      
+      if (audioRef.current) {
+        audioRef.current.src = audioUrl;
+        await audioRef.current.play();
+      }
+    } catch (error) {
+      console.error('Audio playback failed:', error);
+    } finally {
+      setIsPlaying(false);
+    }
+  }, []);
+
+  // Generate and play TTS
+  const generateAndPlayTTS = useCallback(async (text: string) => {
+    try {
+      // This would integrate with ElevenLabs TTS API
+      const response = await fetch('/api/elevenlabs/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          text,
+          voice_id: 'default', // Replace with actual ElevenLabs voice ID
+          model_id: 'eleven_monolingual_v1'
+        })
+      });
+      
+      if (response.ok) {
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        await playAudioResponse(audioUrl);
+      }
+    } catch (error) {
+      console.error('TTS generation failed:', error);
+    }
+  }, [playAudioResponse]);
+
 
   // Execute voice command
-  const executeVoiceCommand = async (command: VoiceCommand): Promise<VoiceResponse> => {
+  const executeVoiceCommand = useCallback(async (command: VoiceCommand): Promise<VoiceResponse> => {
     switch (command.intent) {
       case 'create_issue':
         return await createGitHubIssue(command);
@@ -236,10 +311,10 @@ const VoiceAssistant: React.FC = () => {
           text: 'I didn&apos;t understand that command. Try saying "create issue", "show orders", or "update status".',
         };
     }
-  };
+  }, [createGitHubIssue, handleOrderQuery, handleStatusUpdate, handleGeneralQuery]);
 
   // Create GitHub issue
-  const createGitHubIssue = async (command: VoiceCommand): Promise<VoiceResponse> => {
+  const createGitHubIssue = useCallback(async (command: VoiceCommand): Promise<VoiceResponse> => {
     try {
       const issue: GitHubIssue = {
         title: `Voice Report: ${extractIssueTitle(command.text)}`,
@@ -271,10 +346,10 @@ const VoiceAssistant: React.FC = () => {
         text: 'I encountered an error creating the GitHub issue. Please try again or create it manually.',
       };
     }
-  };
+  }, [extractIssueTitle]);
 
   // Handle order queries
-  const handleOrderQuery = async (command: VoiceCommand): Promise<VoiceResponse> => {
+  const handleOrderQuery = useCallback(async (command: VoiceCommand): Promise<VoiceResponse> => {
     try {
       const filter = command.entities.filter || 'all';
       
@@ -305,10 +380,10 @@ const VoiceAssistant: React.FC = () => {
         text: 'I encountered an error fetching the orders. Please try again.',
       };
     }
-  };
+  }, []);
 
   // Handle status updates
-  const handleStatusUpdate = async (command: VoiceCommand): Promise<VoiceResponse> => {
+  const handleStatusUpdate = useCallback(async (command: VoiceCommand): Promise<VoiceResponse> => {
     const orderNo = command.entities.orderNo;
     const status = command.entities.status;
     
@@ -343,88 +418,14 @@ const VoiceAssistant: React.FC = () => {
         text: `I couldn&apos;t update the status for order ${orderNo}. Please check the order number and try again.`,
       };
     }
-  };
+  }, []);
 
   // Handle general queries
-  const handleGeneralQuery = async (command: VoiceCommand): Promise<VoiceResponse> => {
+  const handleGeneralQuery = useCallback(async (command: VoiceCommand): Promise<VoiceResponse> => {
     return {
       text: 'I can help you with creating GitHub issues, showing orders, and updating order status. What would you like to do?',
     };
-  };
-
-  // Generate and play TTS
-  const generateAndPlayTTS = async (text: string) => {
-    try {
-      // This would integrate with ElevenLabs TTS API
-      const response = await fetch('/api/elevenlabs/tts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          text,
-          voice_id: 'default', // Replace with actual ElevenLabs voice ID
-          model_id: 'eleven_monolingual_v1'
-        })
-      });
-      
-      if (response.ok) {
-        const audioBlob = await response.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        await playAudioResponse(audioUrl);
-      }
-    } catch (error) {
-      console.error('TTS generation failed:', error);
-    }
-  };
-
-  // Play audio response
-  const playAudioResponse = async (audioUrl: string) => {
-    try {
-      setIsPlaying(true);
-      
-      if (audioRef.current) {
-        audioRef.current.src = audioUrl;
-        await audioRef.current.play();
-      }
-    } catch (error) {
-      console.error('Audio playback failed:', error);
-    } finally {
-      setIsPlaying(false);
-    }
-  };
-
-  // Utility functions
-  const extractOrderNumber = (text: string): string | null => {
-    const match = text.match(/ORD-\d{8}-\d{3}/i);
-    return match ? match[0].toUpperCase() : null;
-  };
-
-  const extractStatus = (text: string): string => {
-    const statusKeywords: Record<string, string> = {
-      'completed': 'COMPLETED',
-      'finished': 'COMPLETED',
-      'done': 'COMPLETED',
-      'casting': 'CASTING_COMPLETED',
-      'polishing': 'POLISHING_COMPLETED',
-      'quality': 'QUALITY_CHECK_PENDING',
-      'approved': 'QUALITY_APPROVED',
-      'delivered': 'DELIVERED'
-    };
-    
-    const lowercaseText = text.toLowerCase();
-    for (const [keyword, status] of Object.entries(statusKeywords)) {
-      if (lowercaseText.includes(keyword)) {
-        return status;
-      }
-    }
-    return 'IN_PROGRESS';
-  };
-
-  const extractIssueTitle = (text: string): string => {
-    // Extract meaningful title from voice command
-    const words = text.split(' ');
-    const titleWords = words.slice(0, 8); // Take first 8 words
-    return titleWords.join(' ').replace(/[^\w\s]/gi, '');
-  };
+  }, []);
 
   return (
     <>
