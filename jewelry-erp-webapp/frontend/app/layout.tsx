@@ -21,8 +21,10 @@ export default function RootLayout({
       <body className={inter.className}>
         <div className="flex h-screen bg-gray-50">
           <Sidebar />
-          <main className="flex-1 overflow-hidden">
-            {children}
+          <main className="flex-1 overflow-hidden lg:ml-64">
+            <div className="h-full overflow-auto">
+              {children}
+            </div>
           </main>
         </div>
         <Toaster position="top-right" />

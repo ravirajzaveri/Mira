@@ -16,6 +16,7 @@ import { Textarea } from '@/components/ui/Textarea';
 import { Input } from '@/components/ui/Input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { CalendarIcon, UserIcon, BuildingOfficeIcon } from '@heroicons/react/24/outline';
+import { karigarApi, processApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 
 interface Karigar {
@@ -77,22 +78,13 @@ const OrderStatusForm: React.FC<OrderStatusFormProps> = ({
     try {
       setLoadingMasterData(true);
       
-      const [karigarResponse, processResponse] = await Promise.all([
-        fetch('/api/karigars'),
-        fetch('/api/processes')
-      ]);
-
-      if (!karigarResponse.ok || !processResponse.ok) {
-        throw new Error('Failed to fetch master data');
-      }
-
       const [karigarData, processData] = await Promise.all([
-        karigarResponse.json(),
-        processResponse.json()
+        karigarApi.getAll({ active: true }),
+        processApi.getAll({ active: true })
       ]);
 
-      setKarigars(karigarData.filter((k: Karigar) => k.active));
-      setProcesses(processData.filter((p: Process) => p.active));
+      setKarigars(karigarData);
+      setProcesses(processData);
     } catch (error) {
       toast.error('Failed to load form data');
       console.error('Error fetching master data:', error);

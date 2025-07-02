@@ -24,6 +24,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon
 } from '@heroicons/react/24/outline';
+import { orderApi, karigarApi, processApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 
 const OrdersPage: React.FC = () => {
@@ -52,21 +53,18 @@ const OrdersPage: React.FC = () => {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams({
-        page: currentPage.toString(),
-        page_size: pageSize.toString(),
-      });
+      const params: any = {
+        page: currentPage,
+        page_size: pageSize,
+      };
 
-      if (searchTerm) params.append('search', searchTerm);
-      if (statusFilter) params.append('status', statusFilter);
-      if (locationFilter) params.append('location', locationFilter);
-      if (categoryFilter) params.append('client_category', categoryFilter);
-      if (urgencyFilter) params.append('urgency_level', urgencyFilter);
+      if (searchTerm) params.search = searchTerm;
+      if (statusFilter) params.status = statusFilter;
+      if (locationFilter) params.location = locationFilter;
+      if (categoryFilter) params.client_category = categoryFilter;
+      if (urgencyFilter) params.urgency_level = urgencyFilter;
 
-      const response = await fetch(`/api/orders?${params.toString()}`);
-      if (!response.ok) throw new Error('Failed to fetch orders');
-
-      const data: OrderListResponse = await response.json();
+      const data = await orderApi.getAll(params);
       setOrders(data.orders);
       setTotalOrders(data.total);
       setTotalPages(data.totalPages);
@@ -82,14 +80,7 @@ const OrdersPage: React.FC = () => {
   const handleCreateOrder = async (orderData: OrderCreate) => {
     try {
       setSubmitting(true);
-      const response = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderData),
-      });
-
-      if (!response.ok) throw new Error('Failed to create order');
-
+      await orderApi.create(orderData);
       setShowCreateModal(false);
       await fetchOrders();
       toast.success('Order created successfully');
@@ -107,14 +98,7 @@ const OrdersPage: React.FC = () => {
 
     try {
       setSubmitting(true);
-      const response = await fetch(`/api/orders/${selectedOrder.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderData),
-      });
-
-      if (!response.ok) throw new Error('Failed to update order');
-
+      await orderApi.update(selectedOrder.id, orderData);
       setShowEditModal(false);
       setSelectedOrder(null);
       await fetchOrders();
