@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { Toaster } from 'react-hot-toast'
 import Sidebar from '@/components/Sidebar'
+import VoiceAssistant from '@/components/voice/VoiceAssistant'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -26,6 +27,7 @@ export default function RootLayout({
               {children}
             </div>
           </main>
+          <VoiceAssistant />
         </div>
         <Toaster position="top-right" />
       </body>

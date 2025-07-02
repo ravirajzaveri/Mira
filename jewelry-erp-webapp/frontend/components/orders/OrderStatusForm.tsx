@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { 
   OrderStatusUpdate, 
@@ -94,7 +94,7 @@ const OrderStatusForm: React.FC<OrderStatusFormProps> = ({
   };
 
   // Get suggested progress percentage based on status
-  const getSuggestedProgress = (status: OrderStatus): number => {
+  const getSuggestedProgress = useCallback((status: OrderStatus): number => {
     const progressMap: Record<string, number> = {
       [OrderStatus.RECEIVED]: 5,
       [OrderStatus.DESIGN_PENDING]: 10,
@@ -128,7 +128,7 @@ const OrderStatusForm: React.FC<OrderStatusFormProps> = ({
     };
     
     return progressMap[status] || order.progressPercentage;
-  };
+  }, [order.progressPercentage]);
 
   // Update progress when status changes
   useEffect(() => {
@@ -136,7 +136,7 @@ const OrderStatusForm: React.FC<OrderStatusFormProps> = ({
       const suggestedProgress = getSuggestedProgress(watchedStatus);
       setValue('progressPercentage', suggestedProgress);
     }
-  }, [watchedStatus, setValue]);
+  }, [watchedStatus, setValue, getSuggestedProgress]);
 
   // Clear karigar when location is not KARIGAR
   useEffect(() => {

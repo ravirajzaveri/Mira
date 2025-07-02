@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   Order, 
@@ -50,7 +50,7 @@ const OrdersPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
 
   // Fetch orders
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
       setLoading(true);
       const params: any = {
@@ -74,7 +74,7 @@ const OrdersPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, pageSize, searchTerm, statusFilter, locationFilter, categoryFilter, urgencyFilter]);
 
   // Create order
   const handleCreateOrder = async (orderData: OrderCreate) => {
@@ -145,7 +145,7 @@ const OrdersPage: React.FC = () => {
   // Effects
   useEffect(() => {
     fetchOrders();
-  }, [currentPage, searchTerm, statusFilter, locationFilter, categoryFilter, urgencyFilter]);
+  }, [fetchOrders]);
 
   // Debounced search
   useEffect(() => {
@@ -158,7 +158,7 @@ const OrdersPage: React.FC = () => {
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [searchTerm]);
+  }, [searchTerm, currentPage, fetchOrders]);
 
   return (
     <div className="p-6">
