@@ -46,7 +46,14 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "database": "connected"}
+    from .database import check_db_connection
+    
+    db_healthy = await check_db_connection()
+    return {
+        "status": "healthy" if db_healthy else "unhealthy",
+        "database": "connected" if db_healthy else "disconnected",
+        "provider": "Neon PostgreSQL"
+    }
 
 if __name__ == "__main__":
     import uvicorn

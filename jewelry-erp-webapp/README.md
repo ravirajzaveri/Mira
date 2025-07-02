@@ -91,8 +91,16 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 
 **Backend (.env):**
 ```env
-DATABASE_URL="postgresql://username:password@localhost:5432/jewelry_erp"
+# Neon PostgreSQL Database
+DATABASE_URL="postgresql://username:password@ep-xxx-xxx.us-east-1.aws.neon.tech/jewelry_erp?sslmode=require"
+DIRECT_URL="postgresql://username:password@ep-xxx-xxx.us-east-1.aws.neon.tech/jewelry_erp?sslmode=require"
+ENVIRONMENT="development"
+DEBUG=True
+CORS_ORIGINS="http://localhost:3000"
+JWT_SECRET="your-super-secret-jwt-key"
 ```
+
+> **Note**: See [NEON_SETUP.md](./NEON_SETUP.md) for detailed Neon database setup instructions.
 
 ### Installation
 
@@ -180,16 +188,25 @@ uvicorn main:app --reload
 
 ## Deployment to Vercel
 
-### 1. Database Setup
-Set up a PostgreSQL database (Vercel Postgres recommended):
+### 1. Neon Database Setup
+Set up a Neon PostgreSQL database (recommended):
 
-```bash
-vercel postgres create jewelry-erp-db
-```
+1. Create account at [neon.tech](https://neon.tech)
+2. Create new project: "jewelry-erp"
+3. Copy the connection string
 
 ### 2. Environment Variables
 Configure in Vercel dashboard:
-- `DATABASE_URL`: PostgreSQL connection string
+- `DATABASE_URL`: Your Neon connection string
+- `DIRECT_URL`: Same as DATABASE_URL for Neon
+- `JWT_SECRET`: Secure random string
+
+```bash
+# Using Vercel CLI
+vercel env add DATABASE_URL
+vercel env add DIRECT_URL
+vercel env add JWT_SECRET
+```
 
 ### 3. Deploy
 ```bash
@@ -199,8 +216,11 @@ vercel --prod
 ### 4. Database Migration
 After deployment:
 ```bash
-npx prisma db push
+prisma db push
+python backend/seed.py
 ```
+
+> **Detailed Setup**: See [NEON_SETUP.md](./NEON_SETUP.md) for complete Neon database configuration.
 
 ## Features Implementation Status
 
