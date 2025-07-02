@@ -4,18 +4,27 @@ A modern, full-stack jewelry manufacturing management system built with Next.js,
 
 ## Features
 
-### Core Functionality
+### Core Functionality (Current)
 - **Issue Management**: Create and track material issues to karigars (craftsmen)
 - **Receipt Management**: Record receipts against issued materials with automatic balance calculation
 - **Real-time Tracking**: Live updates of weight balances and process status
 - **Responsive Design**: Modern UI that works on desktop, tablet, and mobile
 
+### Enhanced Features (In Development)
+- **Order Management**: Complete order lifecycle from receipt to delivery
+- **Dispatch System**: Gatepass management for Head Office ↔ Factory transfers
+- **Raw Material Management**: Purchase orders, inventory, and supplier management
+- **Enhanced JobCards**: Detailed tracking with material consumption, wastage, and quality control
+- **Intelligent Status Tracking**: Real-time visibility of order status, location, and karigar assignments
+- **Performance Analytics**: Efficiency metrics, bottleneck identification, and predictive insights
+
 ### Business Features
+- **Complete Workflow**: Head Office → Factory → Karigars → Quality → Dispatch → Delivery
 - **Weight Management**: Comprehensive tracking of gross, net, stone, and wastage weights
-- **Process Tracking**: Multi-stage manufacturing process management
-- **Status Management**: Automatic status updates (Pending/Partial/Completed)
-- **Balance Validation**: Prevents over-receipt with tolerance checking
-- **Auto-numbering**: Automatic generation of unique issue and receipt numbers
+- **Multi-location Tracking**: Head Office, Factory, and individual Karigar tracking
+- **Quality Control**: Multiple checkpoints with pass/fail/rework status
+- **Material Optimization**: Consumption tracking, wastage analysis, and scrap recovery
+- **Auto-numbering**: Unique numbering for orders, job cards, gatepasses, and purchase orders
 
 ### Technical Features
 - **Modern Stack**: Next.js 14, FastAPI, Prisma ORM, PostgreSQL
@@ -24,6 +33,7 @@ A modern, full-stack jewelry manufacturing management system built with Next.js,
 - **Cloud Ready**: Optimized for Vercel deployment
 - **Real-time Updates**: WebSocket support for live data updates
 - **Voice Ready**: Architecture prepared for 11Labs AI integration
+- **Mobile Responsive**: Works seamlessly on all device sizes
 
 ## Tech Stack
 
