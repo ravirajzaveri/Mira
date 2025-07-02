@@ -21,6 +21,7 @@
     }
   ],
   "env": {
-    "DATABASE_URL": "@database_url"
+    "DATABASE_URL": "@neon_database_url",
+    "DIRECT_URL": "@neon_database_url"
   }
 }
