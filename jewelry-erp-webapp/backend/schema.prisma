@@ -1,0 +1,112 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-py"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Karigar {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  contact   String?
+  address   String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  issues   Issue[]
+  receipts Receipt[]
+
+  @@map("karigars")
+}
+
+model Process {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  description String?
+  active      Boolean @default(true)
+
+  issues Issue[]
+
+  @@map("processes")
+}
+
+model Design {
+  id          String  @id @default(cuid())
+  code        String  @unique
+  name        String
+  category    String?
+  description String?
+  active      Boolean @default(true)
+
+  issues Issue[]
+
+  @@map("designs")
+}
+
+model Issue {
+  id           String    @id @default(cuid())
+  issueNo      String    @unique
+  issueDate    DateTime  @default(now())
+  karigarId    String
+  processId    String
+  designId     String?
+  pieces       Int       @default(0)
+  grossWeight  Float     @default(0)
+  stoneWeight  Float     @default(0)
+  netWeight    Float     @default(0)
+  remarks      String?
+  status       String    @default("Pending") // Pending, Partial, Completed
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  karigar  Karigar @relation(fields: [karigarId], references: [id])
+  process  Process @relation(fields: [processId], references: [id])
+  design   Design? @relation(fields: [designId], references: [id])
+  receipts Receipt[]
+
+  @@map("issues")
+}
+
+model Receipt {
+  id            String   @id @default(cuid())
+  receiptNo     String   @unique
+  receiptDate   DateTime @default(now())
+  issueId       String
+  karigarId     String
+  pieces        Int      @default(0)
+  grossWeight   Float    @default(0)
+  stoneWeight   Float    @default(0)
+  wastageWeight Float    @default(0)
+  netWeight     Float    @default(0)
+  remarks       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  issue   Issue   @relation(fields: [issueId], references: [id])
+  karigar Karigar @relation(fields: [karigarId], references: [id])
+
+  @@map("receipts")
+}
+
+model StockRegister {
+  id              String   @id @default(cuid())
+  transactionType String // Issue, Receipt
+  transactionId   String
+  transactionDate DateTime @default(now())
+  grossWeightIn   Float    @default(0)
+  grossWeightOut  Float    @default(0)
+  netWeightIn     Float    @default(0)
+  netWeightOut    Float    @default(0)
+  balanceGross    Float    @default(0)
+  balanceNet      Float    @default(0)
+  createdAt       DateTime @default(now())
+
+  @@map("stock_register")
+}
