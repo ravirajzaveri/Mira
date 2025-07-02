@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 import asyncio
 import os
 from prisma import Prisma
-from routers import issues, receipts, karigars, processes, designs
+from routers import issues, receipts, karigars, processes, designs, orders
 from database import connect_db, disconnect_db
 
 # Global Prisma client
@@ -35,6 +35,7 @@ app.add_middleware(
 )
 
 # Include routers
+app.include_router(orders.router, tags=["orders"])
 app.include_router(issues.router, prefix="/api/issues", tags=["issues"])
 app.include_router(receipts.router, prefix="/api/receipts", tags=["receipts"])
 app.include_router(karigars.router, prefix="/api/karigars", tags=["karigars"])
