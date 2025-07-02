@@ -14,6 +14,7 @@ import { Select } from '@/components/ui/Select';
 import { Textarea } from '@/components/ui/Textarea';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { CalendarIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { orderApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 
 interface OrderFormProps {
@@ -64,10 +65,7 @@ const OrderForm: React.FC<OrderFormProps> = ({
   const generateOrderNumber = async () => {
     try {
       setGeneratingOrderNo(true);
-      const response = await fetch('/api/orders/generate/number');
-      if (!response.ok) throw new Error('Failed to generate order number');
-      
-      const data = await response.json();
+      const data = await orderApi.generateNumber();
       setValue('orderNo', data.orderNo);
       toast.success('Order number generated');
     } catch (error) {
