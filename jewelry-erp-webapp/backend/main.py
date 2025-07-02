@@ -2,9 +2,10 @@ from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import asyncio
+import os
 from prisma import Prisma
-from .routers import issues, receipts, karigars, processes, designs
-from .database import connect_db, disconnect_db
+from routers import issues, receipts, karigars, processes, designs
+from database import connect_db, disconnect_db
 
 # Global Prisma client
 db = Prisma()
@@ -46,14 +47,21 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    from .database import check_db_connection
-    
-    db_healthy = await check_db_connection()
-    return {
-        "status": "healthy" if db_healthy else "unhealthy",
-        "database": "connected" if db_healthy else "disconnected",
-        "provider": "Neon PostgreSQL"
-    }
+    try:
+        from database import check_db_connection
+        db_healthy = await check_db_connection()
+        return {
+            "status": "healthy" if db_healthy else "unhealthy",
+            "database": "connected" if db_healthy else "disconnected",
+            "provider": "Neon PostgreSQL"
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "database": "disconnected",
+            "provider": "Neon PostgreSQL",
+            "error": str(e)
+        }
 
 if __name__ == "__main__":
     import uvicorn

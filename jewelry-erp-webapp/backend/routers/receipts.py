@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends, Query
 from typing import List, Optional
 from datetime import datetime
-from ..database import get_db
-from ..schemas.receipt import ReceiptCreate, ReceiptUpdate, ReceiptResponse
+from database import get_db
+from schemas.receipt import ReceiptCreate, ReceiptUpdate, ReceiptResponse
 from prisma import Prisma
 
 router = APIRouter()
